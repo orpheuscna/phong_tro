@@ -294,6 +294,11 @@
             <input type="number" id="numMonths" value="1" min="1" style="border: 2px solid var(--primary)">
           </div>
 
+          <div class="form-group">
+            <label style="color:#d946ef">Hạn đóng tiền (dd/mm/yyyy)</label>
+            <input type="date" id="dueDate">
+          </div>
+
           <div class="grid-2">
             <div class="form-group">
               <label>Điện đầu - cuối</label>
@@ -464,28 +469,16 @@
 
     function submitRecord() {
       const rName = document.getElementById('roomSelect').value;
-      const lastRec = [...records].reverse().find(r => r.room === rName);
       const nMonths = parseInt(document.getElementById('numMonths').value) || 1;
 
-      let baseDate;
-      if (lastRec && lastRec.dueDate) {
-        baseDate = new Date(lastRec.dueDate);
-      } else if (document.getElementById('startDate').value) {
-        baseDate = new Date(document.getElementById('startDate').value);
-      } else {
-        baseDate = new Date();
-      }
-
-      // Tăng hạn đóng dựa trên số tháng khách đóng
-      baseDate.setMonth(baseDate.getMonth() + nMonths);
-      let dueDateISO = baseDate.toISOString().split('T')[0];
+      // LẤY NGÀY HẠN ĐÓNG TỪ Ô NHẬP THỦ CÔNG
+      const dueDateISO = document.getElementById('dueDate').value;
 
       const pE = +document.getElementById('priceE').value, pW = +document.getElementById('priceW').value;
       const eS = +document.getElementById('eStart').value, eE = +document.getElementById('eEnd').value;
       const wS = +document.getElementById('wStart').value, wE = +document.getElementById('wEnd').value;
       const eUse = (eE > eS) ? (eE - eS) : 0, wUse = (wE > wS) ? (wE - wS) : 0;
 
-      // Tính tổng: (Giá phòng x Số tháng) + Điện + Nước + Nợ cũ
       const roomTotal = (rooms[rName] || 0) * nMonths;
       const finalTotal = roomTotal + (eUse * pE) + (wUse * pW) + (+document.getElementById('oldDebt').value);
 
@@ -503,9 +496,7 @@
       const idx = parseInt(document.getElementById('editIndex').value);
       if (idx === -1) records.push(newRec); else records[idx] = newRec;
 
-      // Reset số tháng về 1 sau khi lưu
       document.getElementById('numMonths').value = 1;
-
       saveLocal(); renderAll(); sync();
     }
 
@@ -521,12 +512,23 @@
     function addRoom() { const n = document.getElementById('newRoomName').value; const p = +document.getElementById('newRoomPrice').value; if (n && p) { rooms[n] = p; renderAll(); sync(); } }
     function delRoom(n) { if (confirm("Xóa phòng?")) { delete rooms[n]; renderAll(); sync(); } }
     function delRec(i) { if (confirm("Xóa hóa đơn?")) { records.splice(i, 1); saveLocal(); renderAll(); sync(); } }
+
     function editRec(i) {
       const r = records[i]; document.getElementById('editIndex').value = i;
       document.getElementById('month').value = r.month; document.getElementById('roomSelect').value = r.room;
       document.getElementById('tenant').value = r.name; document.getElementById('actDate').value = r.actDate || "";
+      document.getElementById('phone').value = r.phone || "";
+      document.getElementById('cccd').value = r.cccd || "";
+      document.getElementById('startDate').value = r.start || "";
+      document.getElementById('eStart').value = r.eStart || 0;
+      document.getElementById('eEnd').value = r.eEnd || 0;
+      document.getElementById('wStart').value = r.wStart || 0;
+      document.getElementById('wEnd').value = r.wEnd || 0;
+      document.getElementById('note').value = r.note || "";
+      document.getElementById('dueDate').value = r.dueDate || ""; // Load hạn đóng khi sửa
       document.getElementById('card-invoice').scrollIntoView({ behavior: 'smooth' });
     }
+
     function initCols() {
       const ths = document.querySelectorAll("#mainTable th"); const container = document.getElementById("colControls");
       ths.forEach((th, i) => { if (i < 14) { const checked = colState[i] !== undefined ? colState[i] : true; const tag = document.createElement("div"); tag.className = "col-tag"; tag.innerHTML = `<input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCol(${i}, this.checked)"> ${th.innerText}`; container.appendChild(tag); } });
