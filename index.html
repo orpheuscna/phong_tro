@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rental Manager Pro v10 - Multi-Month Support</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius-lg: 12px;
+      --radius-md: 8px;
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .status-badge {
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: #f1f5f9;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1100px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 1.2rem;
+    }
+
+    .card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .card-header h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .card-body {
+      padding: 1.25rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn {
+      cursor: pointer;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      transition: 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      width: 100%;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .btn-danger {
+      color: #ef4444;
+      border: 1px solid #fee2e2;
+      background: #fef2f2;
+    }
+
+    .table-container {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1400px;
+    }
+
+    th {
+      background: #f8fafc;
+      padding: 12px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .unpaid-row {
+      background-color: #fff1f2 !important;
+    }
+
+    .collapsed .card-body {
+      display: none;
+    }
+
+    .chev {
+      transition: transform 0.2s;
+      font-size: 10px;
+    }
+
+    .collapsed .chev {
+      transform: rotate(-90deg);
+    }
+
+    .prev-info {
+      font-size: 11px;
+      color: #6366f1;
+      margin-top: 4px;
+      font-weight: 500;
+      display: block;
+    }
+
+    .table-header-flex {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .hide-paid-label {
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .col-tag {
+      display: inline-flex;
+      align-items: center;
+      background: #f1f5f9;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin: 3px;
+      font-size: 11px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div style="display:flex; align-items:center; gap:10px">
+      <div style="background: var(--primary); color: white; padding: 6px; border-radius: 6px;">🏠</div>
+      <h2 style="margin:0; font-size: 17px;">RentalManager <span style="color:var(--primary)">Pro</span></h2>
+    </div>
+    <div id="cloudStatus" class="status-badge">Kết nối...</div>
+  </header>
+
+  <div class="container">
+    <aside>
+      <div class="card" id="card-config">
+        <div class="card-header" onclick="toggleCard('card-config')">
+          <h3>⚙️ Đơn giá Điện/Nước</h3><span class="chev">▼</span>
+        </div>
+        <div class="card-body">
+          <div class="grid-2">
+            <div class="form-group"><label>Điện (đ/kWh)</label><input type="number" id="priceE" value="2110"
+                onchange="savePrices()"></div>
+            <div class="form-group"><label>Nước (đ/m³)</label><input type="number" id="priceW" value="5000"
+                onchange="savePrices()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="card-invoice">
+        <div class="card-header" onclick="toggleCard('card-invoice')">
+          <h3 id="formTitle">📝 Lập hóa đơn mới</h3><span class="chev">▼</span>
+        </div>
+        <div class="card-body">
+          <input type="hidden" id="editIndex" value="-1">
+          <div class="grid-2">
+            <div class="form-group"><label>Tháng/Năm</label><input type="text" id="month" placeholder="03/2026"></div>
+            <div class="form-group"><label>Phòng</label><select id="roomSelect" onchange="autoLoadPrevious()"></select>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label>Khách hàng</label><input type="text" id="tenant"></div>
+            <div class="form-group"><label>SĐT</label><input type="text" id="phone"></div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label>Link CCCD</label><input type="url" id="cccd"></div>
+            <div class="form-group"><label>Ngày vào thuê</label><input type="date" id="startDate"></div>
+          </div>
+
+          <div class="form-group">
+            <label style="color:var(--primary)">Số tháng khách đóng tiền lần này</label>
+            <input type="number" id="numMonths" value="1" min="1" style="border: 2px solid var(--primary)">
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Điện đầu - cuối</label>
+              <div style="display:flex; gap:5px"><input type="number" id="eStart" value="0"><input type="number"
+                  id="eEnd" value="0"></div>
+              <span id="prevEInfo" class="prev-info">Kỳ trước: 0 kWh</span>
+            </div>
+            <div class="form-group">
+              <label>Nước đầu - cuối</label>
+              <div style="display:flex; gap:5px"><input type="number" id="wStart" value="0"><input type="number"
+                  id="wEnd" value="0"></div>
+              <span id="prevWInfo" class="prev-info">Kỳ trước: 0 m³</span>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label style="color:#ef4444">Nợ cũ (đ)</label><input type="number" id="oldDebt"
+                value="0"></div>
+            <div class="form-group"><label>Ghi chú</label><input type="text" id="note"></div>
+          </div>
+          <div class="form-group"><label>Ngày khách đóng tiền</label><input type="date" id="actDate"></div>
+          <button class="btn btn-primary" onclick="submitRecord()">Lưu & Đồng bộ</button>
+        </div>
+      </div>
+
+      <div class="card collapsed" id="card-rooms">
+        <div class="card-header" onclick="toggleCard('card-rooms')">
+          <h3>🚪 Danh sách phòng</h3><span class="chev">▼</span>
+        </div>
+        <div class="card-body">
+          <div id="roomList" style="margin-bottom: 1rem; max-height: 150px; overflow-y: auto;"></div>
+          <div class="grid-2">
+            <input type="text" id="newRoomName" placeholder="Tên phòng">
+            <input type="number" id="newRoomPrice" placeholder="Giá">
+          </div>
+          <button class="btn btn-ghost" style="width:100%; margin-top:10px" onclick="addRoom()">+ Thêm phòng</button>
+        </div>
+      </div>
+
+      <div class="card collapsed" id="card-cols">
+        <div class="card-header" onclick="toggleCard('card-cols')">
+          <h3>👁️ Tùy chỉnh cột</h3><span class="chev">▼</span>
+        </div>
+        <div class="card-body" id="colControls"></div>
+      </div>
+    </aside>
+
+    <main>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem">
+        <div class="table-header-flex">
+          <h3 style="margin:0; font-size:16px">Lịch sử hóa đơn</h3>
+          <label class="hide-paid-label">
+            <input type="checkbox" id="hidePaid" onchange="renderAll()"> Ẩn hóa đơn đã đóng tiền
+          </label>
+        </div>
+        <button class="btn btn-danger btn-ghost" style="padding: 4px 10px; font-size: 11px" onclick="clearAll()">Xóa
+          sạch dữ liệu</button>
+      </div>
+
+      <div class="table-container">
+        <table id="mainTable">
+          <thead>
+            <tr>
+              <th>Tháng</th>
+              <th>Phòng</th>
+              <th>Tên</th>
+              <th>SĐT</th>
+              <th>CCCD</th>
+              <th>Ngày vào</th>
+              <th>Điện dùng</th>
+              <th>Tiền điện</th>
+              <th>Nước dùng</th>
+              <th>Tiền nước</th>
+              <th>Hạn đóng</th>
+              <th>Ngày đóng</th>
+              <th>Ghi chú</th>
+              <th>Tổng cộng</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwfPEwHOmhvAMzTbQybwrgWwKw4vcdhCktZkycs6W_6UeoTjGOgtSuAjP_4lpX6mFoabg/exec';
+    let rooms = JSON.parse(localStorage.getItem('rooms')) || { "Phòng Ngoài": 1500000 };
+    let records = JSON.parse(localStorage.getItem('records')) || [];
+    let colState = JSON.parse(localStorage.getItem('colState')) || {};
+
+    function formatDate(isoString) {
+      if (!isoString) return "-";
+      const date = new Date(isoString);
+      return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function savePrices() {
+      const pE = document.getElementById('priceE').value;
+      const pW = document.getElementById('priceW').value;
+      localStorage.setItem('priceE', pE);
+      localStorage.setItem('priceW', pW);
+      sync();
+    }
+
+    function loadPrices() {
+      const pE = localStorage.getItem('priceE');
+      const pW = localStorage.getItem('priceW');
+      if (pE) document.getElementById('priceE').value = pE;
+      if (pW) document.getElementById('priceW').value = pW;
+    }
+
+    function autoLoadPrevious() {
+      const room = document.getElementById('roomSelect').value;
+      const last = [...records].reverse().find(r => r.room === room);
+      if (last) {
+        document.getElementById('eStart').value = last.eEnd || 0;
+        document.getElementById('wStart').value = last.wEnd || 0;
+        document.getElementById('tenant').value = last.name || "";
+        document.getElementById('phone').value = last.phone || "";
+        document.getElementById('cccd').value = last.cccd || "";
+        document.getElementById('startDate').value = last.start || "";
+        document.getElementById('prevEInfo').innerText = `Kỳ trước: ${last.eStart} → ${last.eEnd} (${last.eUse} kWh)`;
+        document.getElementById('prevWInfo').innerText = `Kỳ trước: ${last.wStart} → ${last.wEnd} (${last.wUse} m³)`;
+        if (!last.actDate) {
+          document.getElementById('oldDebt').value = last.total;
+          document.getElementById('note').value = "Cộng dồn nợ " + last.month;
+        } else {
+          document.getElementById('oldDebt').value = 0; document.getElementById('note').value = "";
+        }
+      } else {
+        document.getElementById('prevEInfo').innerText = "Kỳ trước: 0 kWh";
+        document.getElementById('prevWInfo').innerText = "Kỳ trước: 0 m³";
+      }
+    }
+
+    function renderAll() {
+      const hidePaid = document.getElementById('hidePaid').checked;
+      const sel = document.getElementById('roomSelect'); sel.innerHTML = "";
+      const list = document.getElementById('roomList'); list.innerHTML = "";
+      for (let n in rooms) {
+        sel.innerHTML += `<option value="${n}">${n}</option>`;
+        list.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px solid #f8fafc"><span><b>${n}</b>: ${rooms[n].toLocaleString()}đ</span><span style="color:red; cursor:pointer" onclick="delRoom('${n}')">✕</span></div>`;
+      }
+
+      const tbody = document.querySelector("#mainTable tbody");
+      tbody.innerHTML = "";
+      records.forEach((r, i) => {
+        if (hidePaid && r.actDate) return;
+        const unpaidClass = !r.actDate ? 'unpaid-row' : '';
+        tbody.innerHTML += `<tr class="${unpaidClass}">
+          <td>${r.month}</td><td><b>${r.room}</b></td><td>${r.name}</td><td>${r.phone || '-'}</td>
+          <td>${r.cccd ? `<a href="${r.cccd}" target="_blank">Xem</a>` : '-'}</td>
+          <td>${formatDate(r.start)}</td><td>${r.eUse}</td><td>${(r.eCost || 0).toLocaleString()}</td>
+          <td>${r.wUse}</td><td>${(r.wCost || 0).toLocaleString()}</td>
+          <td><span style="color:#d946ef; font-weight:700">${formatDate(r.dueDate)}</span></td>
+          <td>${formatDate(r.actDate)}</td>
+          <td style="font-size:11px; font-style:italic">${r.note || '-'}</td>
+          <td style="font-weight:700; color:var(--primary)">${r.total.toLocaleString()}</td>
+          <td>
+            <button onclick="editRec(${i})" style="color:blue; border:none; background:none; cursor:pointer">Sửa</button>
+            <button onclick="delRec(${i})" style="color:red; border:none; background:none; cursor:pointer; margin-left:8px">✕</button>
+          </td>
+        </tr>`;
+      });
+      applyCols();
+    }
+
+    function submitRecord() {
+      const rName = document.getElementById('roomSelect').value;
+      const lastRec = [...records].reverse().find(r => r.room === rName);
+      const nMonths = parseInt(document.getElementById('numMonths').value) || 1;
+
+      let baseDate;
+      if (lastRec && lastRec.dueDate) {
+        baseDate = new Date(lastRec.dueDate);
+      } else if (document.getElementById('startDate').value) {
+        baseDate = new Date(document.getElementById('startDate').value);
+      } else {
+        baseDate = new Date();
+      }
+
+      // Tăng hạn đóng dựa trên số tháng khách đóng
+      baseDate.setMonth(baseDate.getMonth() + nMonths);
+      let dueDateISO = baseDate.toISOString().split('T')[0];
+
+      const pE = +document.getElementById('priceE').value, pW = +document.getElementById('priceW').value;
+      const eS = +document.getElementById('eStart').value, eE = +document.getElementById('eEnd').value;
+      const wS = +document.getElementById('wStart').value, wE = +document.getElementById('wEnd').value;
+      const eUse = (eE > eS) ? (eE - eS) : 0, wUse = (wE > wS) ? (wE - wS) : 0;
+
+      // Tính tổng: (Giá phòng x Số tháng) + Điện + Nước + Nợ cũ
+      const roomTotal = (rooms[rName] || 0) * nMonths;
+      const finalTotal = roomTotal + (eUse * pE) + (wUse * pW) + (+document.getElementById('oldDebt').value);
+
+      const newRec = {
+        month: document.getElementById('month').value, room: rName,
+        name: document.getElementById('tenant').value, phone: document.getElementById('phone').value,
+        cccd: document.getElementById('cccd').value, start: document.getElementById('startDate').value,
+        eStart: eS, eEnd: eE, wStart: wS, wEnd: wE, eUse, wUse,
+        eCost: eUse * pE, wCost: wUse * pW, dueDate: dueDateISO,
+        actDate: document.getElementById('actDate').value,
+        note: nMonths > 1 ? `Đóng ${nMonths} tháng. ` + document.getElementById('note').value : document.getElementById('note').value,
+        total: finalTotal
+      };
+
+      const idx = parseInt(document.getElementById('editIndex').value);
+      if (idx === -1) records.push(newRec); else records[idx] = newRec;
+
+      // Reset số tháng về 1 sau khi lưu
+      document.getElementById('numMonths').value = 1;
+
+      saveLocal(); renderAll(); sync();
+    }
+
+    function saveLocal() {
+      localStorage.setItem('rooms', JSON.stringify(rooms));
+      localStorage.setItem('records', JSON.stringify(records));
+      localStorage.setItem('colState', JSON.stringify(colState));
+    }
+    async function sync() {
+      try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ allRooms: rooms, allRecords: records, prices: { e: document.getElementById('priceE').value, w: document.getElementById('priceW').value } }) }); document.getElementById('cloudStatus').innerText = "✅ Đã lưu đám mây"; } catch (e) { }
+    }
+    function toggleCard(id) { document.getElementById(id).classList.toggle('collapsed'); }
+    function addRoom() { const n = document.getElementById('newRoomName').value; const p = +document.getElementById('newRoomPrice').value; if (n && p) { rooms[n] = p; renderAll(); sync(); } }
+    function delRoom(n) { if (confirm("Xóa phòng?")) { delete rooms[n]; renderAll(); sync(); } }
+    function delRec(i) { if (confirm("Xóa hóa đơn?")) { records.splice(i, 1); saveLocal(); renderAll(); sync(); } }
+    function editRec(i) {
+      const r = records[i]; document.getElementById('editIndex').value = i;
+      document.getElementById('month').value = r.month; document.getElementById('roomSelect').value = r.room;
+      document.getElementById('tenant').value = r.name; document.getElementById('actDate').value = r.actDate || "";
+      document.getElementById('card-invoice').scrollIntoView({ behavior: 'smooth' });
+    }
+    function initCols() {
+      const ths = document.querySelectorAll("#mainTable th"); const container = document.getElementById("colControls");
+      ths.forEach((th, i) => { if (i < 14) { const checked = colState[i] !== undefined ? colState[i] : true; const tag = document.createElement("div"); tag.className = "col-tag"; tag.innerHTML = `<input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCol(${i}, this.checked)"> ${th.innerText}`; container.appendChild(tag); } });
+    }
+    function toggleCol(i, show) { colState[i] = show; saveLocal(); applyCols(); }
+    function applyCols() { const rows = document.querySelectorAll("#mainTable tr"); rows.forEach(row => { for (let i = 0; i < row.children.length; i++) row.children[i].style.display = colState[i] === false ? "none" : ""; }); }
+    function clearAll() { if (confirm("Xóa sạch?")) { localStorage.clear(); location.reload(); } }
+
+    window.onload = () => { loadPrices(); initCols(); renderAll(); autoLoadPrevious(); };
+  </script>
+</body>
+
+</html>
