@@ -288,14 +288,13 @@
             <div class="form-group"><label>Link CCCD</label><input type="url" id="cccd"></div>
             <div class="form-group"><label>Ngày vào thuê</label><input type="date" id="startDate"></div>
           </div>
-
           <div class="form-group">
             <label style="color:var(--primary)">Số tháng khách đóng tiền lần này</label>
             <input type="number" id="numMonths" value="1" min="1" style="border: 2px solid var(--primary)">
           </div>
 
           <div class="form-group">
-            <label style="color:#d946ef">Hạn đóng tiền (dd/mm/yyyy)</label>
+            <label style="color: #d946ef;">Hạn đóng tiền (dd/mm/yyyy)</label>
             <input type="date" id="dueDate">
           </div>
 
@@ -392,15 +391,13 @@
 
     function formatDate(isoString) {
       if (!isoString) return "-";
-      const date = new Date(isoString);
-      return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const [y, m, d] = isoString.split('-');
+      return `${d}/${m}/${y}`;
     }
 
     function savePrices() {
-      const pE = document.getElementById('priceE').value;
-      const pW = document.getElementById('priceW').value;
-      localStorage.setItem('priceE', pE);
-      localStorage.setItem('priceW', pW);
+      localStorage.setItem('priceE', document.getElementById('priceE').value);
+      localStorage.setItem('priceW', document.getElementById('priceW').value);
       sync();
     }
 
@@ -423,15 +420,6 @@
         document.getElementById('startDate').value = last.start || "";
         document.getElementById('prevEInfo').innerText = `Kỳ trước: ${last.eStart} → ${last.eEnd} (${last.eUse} kWh)`;
         document.getElementById('prevWInfo').innerText = `Kỳ trước: ${last.wStart} → ${last.wEnd} (${last.wUse} m³)`;
-        if (!last.actDate) {
-          document.getElementById('oldDebt').value = last.total;
-          document.getElementById('note').value = "Cộng dồn nợ " + last.month;
-        } else {
-          document.getElementById('oldDebt').value = 0; document.getElementById('note').value = "";
-        }
-      } else {
-        document.getElementById('prevEInfo').innerText = "Kỳ trước: 0 kWh";
-        document.getElementById('prevWInfo').innerText = "Kỳ trước: 0 m³";
       }
     }
 
@@ -448,8 +436,7 @@
       tbody.innerHTML = "";
       records.forEach((r, i) => {
         if (hidePaid && r.actDate) return;
-        const unpaidClass = !r.actDate ? 'unpaid-row' : '';
-        tbody.innerHTML += `<tr class="${unpaidClass}">
+        tbody.innerHTML += `<tr class="${!r.actDate ? 'unpaid-row' : ''}">
           <td>${r.month}</td><td><b>${r.room}</b></td><td>${r.name}</td><td>${r.phone || '-'}</td>
           <td>${r.cccd ? `<a href="${r.cccd}" target="_blank">Xem</a>` : '-'}</td>
           <td>${formatDate(r.start)}</td><td>${r.eUse}</td><td>${(r.eCost || 0).toLocaleString()}</td>
@@ -457,7 +444,7 @@
           <td><span style="color:#d946ef; font-weight:700">${formatDate(r.dueDate)}</span></td>
           <td>${formatDate(r.actDate)}</td>
           <td style="font-size:11px; font-style:italic">${r.note || '-'}</td>
-          <td style="font-weight:700; color:var(--primary)">${r.total.toLocaleString()}</td>
+          <td style="font-weight:700; color:var(--primary)">${(r.total || 0).toLocaleString()}</td>
           <td>
             <button onclick="editRec(${i})" style="color:blue; border:none; background:none; cursor:pointer">Sửa</button>
             <button onclick="delRec(${i})" style="color:red; border:none; background:none; cursor:pointer; margin-left:8px">✕</button>
@@ -470,34 +457,31 @@
     function submitRecord() {
       const rName = document.getElementById('roomSelect').value;
       const nMonths = parseInt(document.getElementById('numMonths').value) || 1;
-
-      // LẤY NGÀY HẠN ĐÓNG TỪ Ô NHẬP THỦ CÔNG
-      const dueDateISO = document.getElementById('dueDate').value;
+      const editIdx = parseInt(document.getElementById('editIndex').value);
 
       const pE = +document.getElementById('priceE').value, pW = +document.getElementById('priceW').value;
       const eS = +document.getElementById('eStart').value, eE = +document.getElementById('eEnd').value;
       const wS = +document.getElementById('wStart').value, wE = +document.getElementById('wEnd').value;
-      const eUse = (eE > eS) ? (eE - eS) : 0, wUse = (wE > wS) ? (wE - wS) : 0;
+      const eUse = Math.max(0, eE - eS), wUse = Math.max(0, wE - wS);
 
-      const roomTotal = (rooms[rName] || 0) * nMonths;
-      const finalTotal = roomTotal + (eUse * pE) + (wUse * pW) + (+document.getElementById('oldDebt').value);
+      const total = (rooms[rName] * nMonths) + (eUse * pE) + (wUse * pW) + (+document.getElementById('oldDebt').value);
 
-      const newRec = {
-        month: document.getElementById('month').value, room: rName,
-        name: document.getElementById('tenant').value, phone: document.getElementById('phone').value,
-        cccd: document.getElementById('cccd').value, start: document.getElementById('startDate').value,
-        eStart: eS, eEnd: eE, wStart: wS, wEnd: wE, eUse, wUse,
-        eCost: eUse * pE, wCost: wUse * pW, dueDate: dueDateISO,
+      const data = {
+        month: document.getElementById('month').value, room: rName, name: document.getElementById('tenant').value,
+        phone: document.getElementById('phone').value, cccd: document.getElementById('cccd').value,
+        start: document.getElementById('startDate').value, eStart: eS, eEnd: eE, wStart: wS, wEnd: wE,
+        eUse, eCost: eUse * pE, wUse, wCost: wUse * pW,
+        dueDate: document.getElementById('dueDate').value, // Lấy từ ô nhập thủ công
         actDate: document.getElementById('actDate').value,
-        note: nMonths > 1 ? `Đóng ${nMonths} tháng. ` + document.getElementById('note').value : document.getElementById('note').value,
-        total: finalTotal
+        note: document.getElementById('note').value, total
       };
 
-      const idx = parseInt(document.getElementById('editIndex').value);
-      if (idx === -1) records.push(newRec); else records[idx] = newRec;
-
-      document.getElementById('numMonths').value = 1;
+      if (editIdx === -1) records.push(data); else records[editIdx] = data;
       saveLocal(); renderAll(); sync();
+
+      // Reset form
+      document.getElementById('editIndex').value = "-1";
+      document.getElementById('formTitle').innerText = "📝 Lập hóa đơn mới";
     }
 
     function saveLocal() {
@@ -505,18 +489,26 @@
       localStorage.setItem('records', JSON.stringify(records));
       localStorage.setItem('colState', JSON.stringify(colState));
     }
+
     async function sync() {
-      try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ allRooms: rooms, allRecords: records, prices: { e: document.getElementById('priceE').value, w: document.getElementById('priceW').value } }) }); document.getElementById('cloudStatus').innerText = "✅ Đã lưu đám mây"; } catch (e) { }
+      try {
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ allRooms: rooms, allRecords: records, prices: { e: document.getElementById('priceE').value, w: document.getElementById('priceW').value } }) });
+        document.getElementById('cloudStatus').innerText = "✅ Đã lưu";
+      } catch (e) { document.getElementById('cloudStatus').innerText = "❌ Lỗi sync"; }
     }
+
     function toggleCard(id) { document.getElementById(id).classList.toggle('collapsed'); }
-    function addRoom() { const n = document.getElementById('newRoomName').value; const p = +document.getElementById('newRoomPrice').value; if (n && p) { rooms[n] = p; renderAll(); sync(); } }
-    function delRoom(n) { if (confirm("Xóa phòng?")) { delete rooms[n]; renderAll(); sync(); } }
+    function addRoom() { const n = document.getElementById('newRoomName').value, p = +document.getElementById('newRoomPrice').value; if (n && p) { rooms[n] = p; saveLocal(); renderAll(); sync(); } }
+    function delRoom(n) { if (confirm("Xóa phòng?")) { delete rooms[n]; saveLocal(); renderAll(); sync(); } }
     function delRec(i) { if (confirm("Xóa hóa đơn?")) { records.splice(i, 1); saveLocal(); renderAll(); sync(); } }
 
     function editRec(i) {
-      const r = records[i]; document.getElementById('editIndex').value = i;
-      document.getElementById('month').value = r.month; document.getElementById('roomSelect').value = r.room;
-      document.getElementById('tenant').value = r.name; document.getElementById('actDate').value = r.actDate || "";
+      const r = records[i];
+      document.getElementById('editIndex').value = i;
+      document.getElementById('formTitle').innerText = "✏️ Sửa hóa đơn " + r.room;
+      document.getElementById('month').value = r.month || "";
+      document.getElementById('roomSelect').value = r.room;
+      document.getElementById('tenant').value = r.name || "";
       document.getElementById('phone').value = r.phone || "";
       document.getElementById('cccd').value = r.cccd || "";
       document.getElementById('startDate').value = r.start || "";
@@ -524,18 +516,36 @@
       document.getElementById('eEnd').value = r.eEnd || 0;
       document.getElementById('wStart').value = r.wStart || 0;
       document.getElementById('wEnd').value = r.wEnd || 0;
+      document.getElementById('dueDate').value = r.dueDate || ""; // Load hạn đóng
+      document.getElementById('actDate').value = r.actDate || "";
       document.getElementById('note').value = r.note || "";
-      document.getElementById('dueDate').value = r.dueDate || ""; // Load hạn đóng khi sửa
+      document.getElementById('oldDebt').value = 0;
       document.getElementById('card-invoice').scrollIntoView({ behavior: 'smooth' });
     }
 
     function initCols() {
-      const ths = document.querySelectorAll("#mainTable th"); const container = document.getElementById("colControls");
-      ths.forEach((th, i) => { if (i < 14) { const checked = colState[i] !== undefined ? colState[i] : true; const tag = document.createElement("div"); tag.className = "col-tag"; tag.innerHTML = `<input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCol(${i}, this.checked)"> ${th.innerText}`; container.appendChild(tag); } });
+      const ths = document.querySelectorAll("#mainTable th");
+      const container = document.getElementById("colControls");
+      ths.forEach((th, i) => {
+        if (i < 15) {
+          const checked = colState[i] !== undefined ? colState[i] : true;
+          const tag = document.createElement("div");
+          tag.className = "col-tag";
+          tag.innerHTML = `<input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCol(${i}, this.checked)"> ${th.innerText}`;
+          container.appendChild(tag);
+        }
+      });
     }
+
     function toggleCol(i, show) { colState[i] = show; saveLocal(); applyCols(); }
-    function applyCols() { const rows = document.querySelectorAll("#mainTable tr"); rows.forEach(row => { for (let i = 0; i < row.children.length; i++) row.children[i].style.display = colState[i] === false ? "none" : ""; }); }
-    function clearAll() { if (confirm("Xóa sạch?")) { localStorage.clear(); location.reload(); } }
+    function applyCols() {
+      const rows = document.querySelectorAll("#mainTable tr");
+      rows.forEach(row => {
+        for (let i = 0; i < row.children.length; i++) row.children[i].style.display = colState[i] === false ? "none" : "";
+      });
+    }
+
+    function clearAll() { if (confirm("Xóa sạch toàn bộ dữ liệu?")) { localStorage.clear(); location.reload(); } }
 
     window.onload = () => { loadPrices(); initCols(); renderAll(); autoLoadPrevious(); };
   </script>
