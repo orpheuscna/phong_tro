@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Quản Lý Thuê Trọ - Phạm Văn Hết</title>
+  <title>Rental Manager Pro v11 - Smart Sorting & Zalo</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <style>
@@ -221,7 +221,7 @@
 
     .hide-paid-label {
       white-space: nowrap;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
       font-size: 13px;
@@ -248,7 +248,7 @@
   <header>
     <div style="display:flex; align-items:center; gap:10px">
       <div style="background: var(--primary); color: white; padding: 6px; border-radius: 6px;">🏠</div>
-      <h2 style="margin:0; font-size: 17px;">Quản Lý Thuê Trọ <span style="color:var(--primary)">Version 1.0</span></h2>
+      <h2 style="margin:0; font-size: 17px;">RentalManager <span style="color:var(--primary)">Pro</span></h2>
     </div>
     <div id="cloudStatus" class="status-badge">Kết nối...</div>
   </header>
@@ -261,9 +261,9 @@
         </div>
         <div class="card-body">
           <div class="grid-2">
-            <div class="form-group"><label>Điện (đ/kWh)</label><input type="number" id="priceE" value="2110"
+            <div class="form-group"><label>Điện (đ/kWh)</label><input type="number" id="priceE" value="3000"
                 onchange="savePrices()"></div>
-            <div class="form-group"><label>Nước (đ/m³)</label><input type="number" id="priceW" value="5000"
+            <div class="form-group"><label>Nước (đ/m³)</label><input type="number" id="priceW" value="6000"
                 onchange="savePrices()"></div>
           </div>
         </div>
@@ -294,7 +294,7 @@
           </div>
 
           <div class="form-group">
-            <label style="color: #d946ef;">Hạn đóng tiền</label>
+            <label style="color: #d946ef;">Hạn đóng tiền (dd/mm/yyyy)</label>
             <input type="date" id="dueDate">
           </div>
 
@@ -317,7 +317,7 @@
                 value="0"></div>
             <div class="form-group"><label>Ghi chú</label><input type="text" id="note"></div>
           </div>
-          <div class="form-group"><label>Ngày khách đóng tiền</label><input type="date" id="actDate"></div>
+          <div class="form-group"><label>Ngày khách đóng tiền (dd/mm/yyyy)</label><input type="date" id="actDate"></div>
           <button class="btn btn-primary" onclick="submitRecord()">Lưu & Đồng bộ</button>
         </div>
       </div>
@@ -423,6 +423,29 @@
       }
     }
 
+    async function loadDataFromCloud() {
+      const status = document.getElementById('cloudStatus');
+      status.innerText = "⏳ Đang tải...";
+      try {
+        const res = await fetch(SCRIPT_URL);
+        const data = await res.json();
+
+        // SỬA Ở ĐÂY: Vì Script của bạn trả về {rooms:..., records:...}
+        if (data && data.records) {
+          records = data.records; // Script bạn đặt tên là records
+          rooms = data.rooms || rooms; // Script bạn đặt tên là rooms
+          saveLocal();
+          renderAll();
+          status.innerText = "✅ Đã đồng bộ";
+        } else {
+          status.innerText = "✅ Sẵn sàng";
+        }
+      } catch (e) {
+        console.log(e);
+        status.innerText = "❌ Lỗi kết nối";
+      }
+    }
+
     function renderAll() {
       const hidePaid = document.getElementById('hidePaid').checked;
       const sel = document.getElementById('roomSelect'); sel.innerHTML = "";
@@ -432,10 +455,21 @@
         list.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px solid #f8fafc"><span><b>${n}</b>: ${rooms[n].toLocaleString()}đ</span><span style="color:red; cursor:pointer" onclick="delRoom('${n}')">✕</span></div>`;
       }
 
+      // SẮP XẾP: Ưu tiên hóa đơn chưa đóng (unpaid) và hạn gần nhất lên trước
+      const sortedRecords = [...records].sort((a, b) => {
+        if (!!a.actDate !== !!b.actDate) return a.actDate ? 1 : -1;
+        if (!a.dueDate) return 1; if (!b.dueDate) return -1;
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      });
+
       const tbody = document.querySelector("#mainTable tbody");
       tbody.innerHTML = "";
-      records.forEach((r, i) => {
+      sortedRecords.forEach((r) => {
+        const realIdx = records.indexOf(r);
         if (hidePaid && r.actDate) return;
+
+        const msg = `Chao ban ${r.name}, tien phong ${r.room} thang ${r.month} la ${r.total.toLocaleString()}d. Han dong la ${formatDate(r.dueDate)}. Ban vui long thanh toan nhe. Cam on ban!`;
+
         tbody.innerHTML += `<tr class="${!r.actDate ? 'unpaid-row' : ''}">
           <td>${r.month}</td><td><b>${r.room}</b></td><td>${r.name}</td><td>${r.phone || '-'}</td>
           <td>${r.cccd ? `<a href="${r.cccd}" target="_blank">Xem</a>` : '-'}</td>
@@ -446,24 +480,33 @@
           <td style="font-size:11px; font-style:italic">${r.note || '-'}</td>
           <td style="font-weight:700; color:var(--primary)">${(r.total || 0).toLocaleString()}</td>
           <td>
-            <button onclick="editRec(${i})" style="color:blue; border:none; background:none; cursor:pointer">Sửa</button>
-            <button onclick="delRec(${i})" style="color:red; border:none; background:none; cursor:pointer; margin-left:8px">✕</button>
+            <div style="display:flex; gap:5px; justify-content:center">
+              <button onclick="editRec(${realIdx})" style="color:blue; border:none; background:none; cursor:pointer">Sửa</button>
+              ${!r.actDate ? `<button onclick="sendZalo('${r.phone}', '${msg}')" style="color:#0068ff; border:none; background:none; cursor:pointer; font-weight:bold">Zalo</button>` : ''}
+              <button onclick="delRec(${realIdx})" style="color:red; border:none; background:none; cursor:pointer">✕</button>
+            </div>
           </td>
         </tr>`;
       });
       applyCols();
     }
 
+    function sendZalo(phone, msg) {
+      if (!phone || phone === '-') { alert("Chưa có SĐT!"); return; }
+      navigator.clipboard.writeText(msg).then(() => {
+        alert("Đã copy lời nhắc! Hãy dán vào Zalo.");
+        window.open(`https://zalo.me/${phone}`, '_blank');
+      });
+    }
+
     function submitRecord() {
       const rName = document.getElementById('roomSelect').value;
       const nMonths = parseInt(document.getElementById('numMonths').value) || 1;
       const editIdx = parseInt(document.getElementById('editIndex').value);
-
       const pE = +document.getElementById('priceE').value, pW = +document.getElementById('priceW').value;
       const eS = +document.getElementById('eStart').value, eE = +document.getElementById('eEnd').value;
       const wS = +document.getElementById('wStart').value, wE = +document.getElementById('wEnd').value;
       const eUse = Math.max(0, eE - eS), wUse = Math.max(0, wE - wS);
-
       const total = (rooms[rName] * nMonths) + (eUse * pE) + (wUse * pW) + (+document.getElementById('oldDebt').value);
 
       const data = {
@@ -471,17 +514,16 @@
         phone: document.getElementById('phone').value, cccd: document.getElementById('cccd').value,
         start: document.getElementById('startDate').value, eStart: eS, eEnd: eE, wStart: wS, wEnd: wE,
         eUse, eCost: eUse * pE, wUse, wCost: wUse * pW,
-        dueDate: document.getElementById('dueDate').value, // Lấy từ ô nhập thủ công
+        dueDate: document.getElementById('dueDate').value,
         actDate: document.getElementById('actDate').value,
         note: document.getElementById('note').value, total
       };
 
       if (editIdx === -1) records.push(data); else records[editIdx] = data;
       saveLocal(); renderAll(); sync();
-
-      // Reset form
       document.getElementById('editIndex').value = "-1";
       document.getElementById('formTitle').innerText = "📝 Lập hóa đơn mới";
+      document.getElementById('tenant').value = ""; document.getElementById('note').value = "";
     }
 
     function saveLocal() {
@@ -505,7 +547,7 @@
     function editRec(i) {
       const r = records[i];
       document.getElementById('editIndex').value = i;
-      document.getElementById('formTitle').innerText = "✏️ Sửa hóa đơn " + r.room;
+      document.getElementById('formTitle').innerText = "✏️ Sửa " + r.room;
       document.getElementById('month').value = r.month || "";
       document.getElementById('roomSelect').value = r.room;
       document.getElementById('tenant').value = r.name || "";
@@ -516,7 +558,7 @@
       document.getElementById('eEnd').value = r.eEnd || 0;
       document.getElementById('wStart').value = r.wStart || 0;
       document.getElementById('wEnd').value = r.wEnd || 0;
-      document.getElementById('dueDate').value = r.dueDate || ""; // Load hạn đóng
+      document.getElementById('dueDate').value = r.dueDate || "";
       document.getElementById('actDate').value = r.actDate || "";
       document.getElementById('note').value = r.note || "";
       document.getElementById('oldDebt').value = 0;
@@ -547,10 +589,8 @@
 
     function clearAll() { if (confirm("Xóa sạch toàn bộ dữ liệu?")) { localStorage.clear(); location.reload(); } }
 
-    window.onload = () => { loadPrices(); initCols(); renderAll(); autoLoadPrevious(); };
+    window.onload = () => { loadPrices(); initCols(); renderAll(); autoLoadPrevious(); loadDataFromCloud(); };
   </script>
 </body>
 
-
 </html>
-
